@@ -1,0 +1,32 @@
+{
+  "name": "Biztime",
+  "version": "1.0.0",
+  "description": "This is a Springboard assignment to create a simple Express app using the `pg` library to interact with a PostgreSQL database.",
+  "main": "src/app.js",
+  "scripts": {
+    "test": "NODE_ENV=test jest",
+    "start": "node src/server.js",
+    "dev": "NODE_ENV=development nodemon src/server.js",
+    "dev:test": "NODE_ENV=test nodemon src/server.js",
+    "debug": "NODE_ENV=development nodemon --inspect src/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "morgan": "^1.10.0",
+    "pg": "^8.12.0",
+    "slugify": "^1.6.6"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.4",
+    "pg": "^8.12.0",
+    "supertest": "^7.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node"
+  }
+}

@@ -1,2 +1,0 @@
-/** Database setup for BizTime. */
-
