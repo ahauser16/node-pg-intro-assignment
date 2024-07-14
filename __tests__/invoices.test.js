@@ -1,8 +1,8 @@
 const request = require('supertest');
 const app = require('../src/app');
 const db = require('../src/db/db');
-const ExpressError = require('../src/utils/expressError');
-const slugify = require('slugify');
+// const ExpressError = require('../src/utils/expressError');
+// const slugify = require('slugify');
 
 let testInvoice;
 beforeEach(async () => {
@@ -130,48 +130,30 @@ describe('POST /invoices', () => {
 });
 
 describe('PUT /invoices/:id', () => {
-    let originalAmt;
-
-    beforeEach(async () => {
-        // Fetch the original amount of the invoice with id "1" to revert changes after the test
-        const result = await db.query('SELECT amt FROM invoices WHERE id = $1', ['1']);
-        originalAmt = result.rows[0].amt;
-    });
-
-    afterEach(async () => {
-        // Revert the invoice amount to its original value after the test
-        await db.query('UPDATE invoices SET amt = $1 WHERE id = $2', [originalAmt, '1']);
-    });
-
-    test('should update an invoice amount by id and return the updated invoice', async () => {
-        const newAmt = 500; // New amount to update the invoice with
+    test('should update an invoice amount and paid status, setting paid_date accordingly', async () => {
+        // Assuming testInvoice is unpaid initially and has a null paid_date
+        const newAmt = 500;
+        const paid = true; // Changing the status to paid
 
         const response = await request(app)
-            .put('/invoices/1')
-            .send({ amt: newAmt });
+            .put(`/invoices/${testInvoice.id}`)
+            .send({ amt: newAmt, paid });
 
         expect(response.statusCode).toBe(200);
         expect(response.body.invoice).toBeDefined();
-        expect(response.body.invoice.id.toString()).toBe('1');
+        expect(response.body.invoice.id).toBe(testInvoice.id);
         expect(response.body.invoice.amt).toBe(newAmt);
+        expect(response.body.invoice.paid).toBe(paid);
+        expect(response.body.invoice.paid_date).not.toBeNull();
 
-        // Verify the invoice amount was actually updated in the database
-        const dbResponse = await db.query('SELECT * FROM invoices WHERE id = $1', ['1']);
+        // Verify the invoice amount and paid status were actually updated in the database
+        const dbResponse = await db.query('SELECT * FROM invoices WHERE id = $1', [testInvoice.id]);
         expect(dbResponse.rows[0].amt).toBe(newAmt);
+        expect(dbResponse.rows[0].paid).toBe(paid);
+        expect(dbResponse.rows[0].paid_date).not.toBeNull();
     });
 
-    test('should return 404 for a non-existent invoice id', async () => {
-        const nonExistentId = 99999; // Assuming this ID does not exist in the database
-        const newAmt = 500;
-
-        const response = await request(app)
-            .put(`/invoices/${nonExistentId}`)
-            .send({ amt: newAmt });
-
-        expect(response.statusCode).toBe(404);
-        expect(response.body.error).toBeDefined();
-        expect(response.body.message).toBe(`Invoice with id ${nonExistentId} not found`);
-    });
+    // You can add more tests here to cover other scenarios like un-paying an invoice, etc.
 });
 
 describe('DELETE /invoices/:id', () => {

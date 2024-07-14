@@ -73,24 +73,35 @@ describe('GET /companies/:code', () => {
         expect(response.body.error).toBeDefined();
         expect(response.body.message).toBe(`Company with code ${nonExistentCode} not found`);
     });
+
+    test('should return a company, its invoices, and its industries by code', async () => {
+        // Use a predefined company that has industries associated
+        const predefinedCompanyCode = 'apple'; // Assuming 'apple' has industries associated
+        const response = await request(app).get(`/companies/${predefinedCompanyCode}`);
+        expect(response.statusCode).toBe(200);
+        expect(response.body.company).toBeDefined();
+        expect(response.body.company.code).toBe(predefinedCompanyCode);
+        // Check if industries is an array and contains expected industry
+        expect(Array.isArray(response.body.company.industries)).toBe(true);
+        expect(response.body.company.industries).toContain('Technology');
+    });
 });
 
 describe('POST /companies', () => {
-    let newCompanyCode;
     let newCompanyName;
     let newCompanyDescription;
 
     beforeEach(() => {
-        // Generate a unique code for the new company to avoid conflicts
-        newCompanyCode = slugify(`newco-${Date.now()}`, { lower: true, strict: true });
-        newCompanyName = `New Company ${newCompanyCode}`;
+        // Generate a unique name for the new company to avoid conflicts
+        newCompanyName = `New Company ${Date.now()}`;
         newCompanyDescription = 'A new company for testing POST route.';
     });
 
     afterEach(async () => {
         // Delete the new company after the test to clean up
-        if (newCompanyCode) {
-            await db.query(`DELETE FROM companies WHERE code = $1`, [newCompanyCode]);
+        const codeToDelete = slugify(newCompanyName, { lower: true, strict: true });
+        if (codeToDelete) {
+            await db.query(`DELETE FROM companies WHERE code = $1`, [codeToDelete]);
         }
     });
 
@@ -98,21 +109,22 @@ describe('POST /companies', () => {
         const response = await request(app)
             .post('/companies')
             .send({
-                code: newCompanyCode,
                 name: newCompanyName,
                 description: newCompanyDescription
             });
 
+        const expectedCode = slugify(newCompanyName, { lower: true, strict: true });
+
         expect(response.statusCode).toBe(201);
         expect(response.body.company).toBeDefined();
-        expect(response.body.company.code).toBe(newCompanyCode);
+        expect(response.body.company.code).toBe(expectedCode);
         expect(response.body.company.name).toBe(newCompanyName);
         expect(response.body.company.description).toBe(newCompanyDescription);
 
         // Verify the company was actually added to the database
-        const dbResponse = await db.query('SELECT * FROM companies WHERE code = $1', [newCompanyCode]);
+        const dbResponse = await db.query('SELECT * FROM companies WHERE code = $1', [expectedCode]);
         expect(dbResponse.rows.length).toBe(1);
-        expect(dbResponse.rows[0].code).toBe(newCompanyCode);
+        expect(dbResponse.rows[0].code).toBe(expectedCode);
         expect(dbResponse.rows[0].name).toBe(newCompanyName);
         expect(dbResponse.rows[0].description).toBe(newCompanyDescription);
     });
